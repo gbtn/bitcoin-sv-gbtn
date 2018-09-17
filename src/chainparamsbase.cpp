@@ -13,6 +13,7 @@
 const std::string CBaseChainParams::MAIN = "main";
 const std::string CBaseChainParams::TESTNET = "test";
 const std::string CBaseChainParams::REGTEST = "regtest";
+const std::string CBaseChainParams::GBTN = "gbtn";
 
 void AppendParamsHelpMessages(std::string &strUsage, bool debugHelp) {
     strUsage += HelpMessageGroup(_("Chain selection options:"));
@@ -23,6 +24,9 @@ void AppendParamsHelpMessages(std::string &strUsage, bool debugHelp) {
                         "chain in which blocks can be solved instantly. "
                         "This is intended for regression testing tools and app "
                         "development.");
+        strUsage += HelpMessageOpt(
+                "-gbtn", "Use the Gigablock Test Network"
+                );
     }
 }
 
@@ -32,6 +36,17 @@ void AppendParamsHelpMessages(std::string &strUsage, bool debugHelp) {
 class CBaseMainParams : public CBaseChainParams {
 public:
     CBaseMainParams() { nRPCPort = 8332; }
+};
+
+/**
+ * Gigablock test network
+ */
+class CBaseGbtnParams : public CBaseChainParams {
+public:
+    CBaseGbtnParams() {
+        nRPCPort = 9332;
+        strDataDir = "gbtn";
+    }
 };
 
 /**
@@ -69,6 +84,8 @@ CreateBaseChainParams(const std::string &chain) {
         return std::unique_ptr<CBaseChainParams>(new CBaseMainParams());
     else if (chain == CBaseChainParams::TESTNET)
         return std::unique_ptr<CBaseChainParams>(new CBaseTestNetParams());
+    else if (chain == CBaseChainParams::GBTN)
+        return std::unique_ptr<CBaseChainParams>(new CBaseGbtnParams());
     else if (chain == CBaseChainParams::REGTEST)
         return std::unique_ptr<CBaseChainParams>(new CBaseRegTestParams());
     else
@@ -83,11 +100,13 @@ void SelectBaseParams(const std::string &chain) {
 std::string ChainNameFromCommandLine() {
     bool fRegTest = gArgs.GetBoolArg("-regtest", false);
     bool fTestNet = gArgs.GetBoolArg("-testnet", false);
+    bool fGbtn = gArgs.GetBoolArg("-gbtn", false);
 
-    if (fTestNet && fRegTest)
+    if ((fTestNet && fRegTest) || (fTestNet && fGbtn) || (fRegTest && fGbtn))
         throw std::runtime_error(
             "Invalid combination of -regtest and -testnet.");
     if (fRegTest) return CBaseChainParams::REGTEST;
     if (fTestNet) return CBaseChainParams::TESTNET;
+    if (fGbtn) return CBaseChainParams::GBTN;
     return CBaseChainParams::MAIN;
 }
